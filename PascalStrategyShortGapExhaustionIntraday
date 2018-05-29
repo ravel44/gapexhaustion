@@ -1,0 +1,109 @@
+// SCRIPT CREATED BY PASCAL GUYON
+// DAY TRADING STRATEGY FOR GAP EXHAUSTION - SHORT SIDE
+
+inputs:
+SharesAmount(50),
+percentstoploss(0.35),
+StoplossFloor(0.6),
+ExitEOD(1555),
+Price(Close),
+offset(0.05), // offset for stoploss after 9:35
+VolatilityFilterEntryATRFactor(1.5);
+
+vars:
+var0(0), // fast length
+var1(0), // slow length
+var2(0), // stop value
+var4(0),// stop 5 min value
+var30(0),// value of stoploss
+atr(0,data2), // getting the atr of the daily ( data2 )
+storedopen(0),
+storedhigh(0),
+//execution levels
+EntryForDrawing(0),
+Target1minimumprice(0),
+//trailing
+Trailing(C),
+//drawing variables
+//volatility filter vars
+hod(0),
+lod(0),
+storedhighesthigh5min(0),
+VolatilityFilter(0),
+stoplossPrice(0),
+Stoploss5minAfterOpenPrice(0),
+Stoploss5minAfterOpenID(0),//drawing
+DrawingStop(0),
+storedentry(0),
+trailingstop(0),
+storedstopprice(0);
+
+// DEFINITIONS---------
+var0=average(Price, 9);
+var1=average(Price, 21);
+var2=atr*sharesamount*percentstoploss; // value in $ to SetStopLoss
+var30=maxlist(stoplossfloor*sharesamount,var2);
+atr=average(truerange of data2, 14); // ATR value
+
+//volatilityfilter
+if time>931 and time<entrytime(0) then hod=maxlist(hod,time-931);
+if time>931 and time<entrytime(0) then lod=minlist(lod,time-931);
+if time=935 then storedhighesthigh5min=highest(H,5); //storing value of highest high at 9:35
+volatilityfilter=hod-lod;
+
+//STORING
+if time=931 then storedopen=Open;
+if time= entrytime(0) then storedentry=entryprice;
+if time= entrytime(0) then storedhigh=highest(high, time-931);
+
+//entry
+if ( EntriesToday(Date) = 0 ) and
+volatilityfilter<VolatilityFilterEntryATRFactor*atr and // protection against opening drive
+time>931 and time< 937 // time trigger
+and MarketPosition=0 // no positions open
+then begin
+if C<O and C[1]>O[1] and C[2]>O[2] then // 2 green bars, 1 red bar
+sellshort sharesamount shares next bar at insideask -.7 limit else
+if C<O and C[1]>O[1] then // 1 green bar 1 red bar
+sellshort sharesamount shares next bar at insideask -.7 limit else
+if C>O and C[1]<O[1] then //1 red bar, 1 green bar
+sellshort sharesamount shares next bar at insideask -.7 limit else
+if C>O and C[1]<O[1] and C[2]<O[2] then //
+sellshort sharesamount shares next bar at insideask -.7 limit;
+end;
+setstoploss(var30);
+
+
+// EXIT 1
+if marketposition=-1 and
+time>950 and 
+C<storedhigh-atr and // minimum target reached
+var0 crosses above var1 //mav crossed
+then begin
+buytocover all shares next bar at market;
+end;
+
+// EXIT EOD
+if time=ExitEOD and marketposition=-1 then begin
+buytocover all shares next bar at market;
+end;
+
+//DRAWING-------------------------------------------------------
+// definitions for drawing
+Target1minimumprice=storedhigh-atr;
+StoplossPrice=entryprice+maxlist(stoplossfloor, percentstoploss*atr);
+EntryForDrawing=entryprice;
+
+//Entry line
+Value1=tl_new(Date,Time,entryfordrawing,Date,1559,entryfordrawing);
+TL_setcolor(Value1,White);
+TL_setstyle(Value1,2);
+
+//Stoploss
+Value2=tl_new(Date,931,stoplossprice,Date,1559,stoplossprice);
+TL_setcolor(Value2, red);
+
+//Traget1minimum
+if marketposition=-1 then
+Value3= tl_new(Date,Time,target1minimumprice,Date,1559,target1minimumprice);
+TL_setcolor(Value3, green);
