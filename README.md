@@ -1,6 +1,6 @@
 # Gap exhaustion day trading strategy
 
-A script I created years ago to automate trading gap exhaustions on daily charts with US equities ( NASDAQ, NYSE ). The script is designed to be executed on a 1 min chart. 
+A script I created years ago to automate trading gap exhaustions on daily charts. The script is designed to be executed on a 1 min chart. 
 
 Created with finance software MultiCharts with TradeStation's "EasyLanguage".
 
